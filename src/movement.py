@@ -97,33 +97,6 @@ def poseCallBack(poseMessage):
     y = poseMessage.y
     angle = poseMessage.theta 
 
-'''def move(speed, distance, isForward):
-    velocity = Twist()
-    global x, y
-    x0 = x
-    y0 = y
-    if (isForward):
-        velocity.linear.x = abs(speed)
-    else:
-        velocity.linear.x = -abs(speed)
-    
-    distance_moved = 0.0
-    loopRate = rospy.Rate(10)
-    cmd_vel = '/turtle1/cmd_vel'
-    velocity_pub = rospy.Publisher(cmd_vel, Twist, queue_size=10)
-    while True:
-        rospy.loginfo('Moving')
-        velocity_pub.publish(velocity)
-        loopRate.sleep()
-        distance_moved = distance_moved +abs(0.5 * math.sqrt(((x-x0)**2)+((y-y0)**2)))
-        print(distance_moved)
-        print("x= ",x," y= ",y)
-        if not (distance_moved<distance):
-            rospy.loginfo("Reached destination")
-            break
-    velocity.linear.x = 0
-    velocity_pub.publish(velocity)'''
-
 def move_y(speed,distance,isForward):
     velocity=Twist()
     global x,y
@@ -235,8 +208,6 @@ def go_to_goal(x_dest,y_dest):
         print(int(x)-x_dest)
         move_x(1,x-x_dest,False)
 
-
-
 if __name__=="__main__":
     try:
         rospy.init_node('turtle_cleaner',anonymous=True)
@@ -252,8 +223,14 @@ if __name__=="__main__":
              [0, 0, 1, 0, 0, 0]
              ]
         start = (x,y)
-        end = (0,2)
+        print(start)
+        time.sleep(5)
+        end = (3,2)
+        start_time=time.time()
         path = astar(graph,start,end)
+        end_time=time.time()
+        print(path)
+        print("Time taken to find path using A* algorithm is:",(end_time-start_time))
         for i in range(len(path)):
             go_to_goal(path[i][0],path[i][1])
             print(path[i][0],path[i][1],"\n")

@@ -1,3 +1,5 @@
+import time
+
 class Node():
     def __init__(self, parent=None, position=None):
         self.parent = parent
@@ -69,9 +71,12 @@ def main():
              ]
     start = (0, 0)
     end = (5, 5)
-    end1 = (5, 5)
-    print("Bjds")
+    start_time=time.time()
     path = astar(graph, (5,5), (0,2))
+    end_time=time.time()
+    time_taken=end_time-start_time
+    print("Time taken to find path using A* algorithm is: {}".format(time_taken))
+    time.sleep(2)
     for i in range(len(path)):
             #go_to_goal(path[i][0],path[i][1])
             print(path[i][0],path[i][1])
