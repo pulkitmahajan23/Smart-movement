@@ -15,10 +15,67 @@ z=0
 angle=0
 r=sr.Recognizer()
 
+class Node():
+    def __init__(self, parent=None, position=None):
+        self.parent = parent
+        self.position = position
+        self.g = 0
+        self.h = 0
+        self.f = 0
+    def __eq__(self, other):
+        return self.position == other.position
+def astar(maze, start, end):
+    start_node = Node(None, start)
+    start_node.g = start_node.h = start_node.f = 0
+    end_node = Node(None, end)
+    end_node.g = end_node.h = end_node.f = 0
+    open_list = []
+    closed_list = []
+    open_list.append(start_node)
+    while len(open_list) > 0:
+        current_node = open_list[0]
+        current_index = 0
+        for index, item in enumerate(open_list):
+            if item.f < current_node.f:
+                current_node = item
+                current_index = index
+        open_list.pop(current_index)
+        closed_list.append(current_node)
+        if current_node == end_node:
+            path = []
+            current = current_node
+            while current is not None:
+                path.append(current.position)
+                current = current.parent
+            return path[::-1]
+        children = []
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
+            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (
+                    len(maze[len(maze) - 1]) - 1) or node_position[1] < 0:
+                continue
+            if maze[node_position[0]][node_position[1]] != 0:
+                continue
+            new_node = Node(current_node, node_position)
+            children.append(new_node)
+        for child in children:
+            for closed_child in closed_list:
+                if child == closed_child:
+                    continue
+            child.g = current_node.g + 1
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                    (child.position[1] - end_node.position[1]) ** 2)
+            child.f = child.g + child.h
+            for open_node in open_list:
+                if child == open_node and child.g > open_node.g:
+                    continue
+            open_list.append(child)
+
 def command():
     while True:
         with sr.Microphone() as source:
             print("Listening")
+            #r.adjust_for_ambient_noise(source,duration=0.2)
             audio=r.listen(source)
             try:
                 response=r.recognize_google(audio)
@@ -40,7 +97,7 @@ def poseCallBack(poseMessage):
     y = poseMessage.y
     angle = poseMessage.theta 
 
-def move(speed, distance, isForward):
+'''def move(speed, distance, isForward):
     velocity = Twist()
     global x, y
     x0 = x
@@ -60,6 +117,57 @@ def move(speed, distance, isForward):
         loopRate.sleep()
         distance_moved = distance_moved +abs(0.5 * math.sqrt(((x-x0)**2)+((y-y0)**2)))
         print(distance_moved)
+        print("x= ",x," y= ",y)
+        if not (distance_moved<distance):
+            rospy.loginfo("Reached destination")
+            break
+    velocity.linear.x = 0
+    velocity_pub.publish(velocity)'''
+
+def move_y(speed,distance,isForward):
+    velocity=Twist()
+    global x,y
+    y0=y
+    if (isForward):
+        velocity.linear.y = abs(speed)
+    else:
+        velocity.linear.y = -abs(speed)
+    distance_moved=0.0
+    loopRate = rospy.Rate(10)
+    cmd_vel = '/turtle1/cmd_vel'
+    velocity_pub = rospy.Publisher(cmd_vel, Twist, queue_size=10)
+    while True:
+        rospy.loginfo('Moving')
+        velocity_pub.publish(velocity)
+        loopRate.sleep()
+        distance_moved =  abs(y-y0)
+        print(distance_moved)
+        print("x= ",x," y= ",y)
+        if not (distance_moved<distance):
+            rospy.loginfo("Reached destination")
+            break
+    velocity.linear.y = 0
+    velocity_pub.publish(velocity)
+
+def move_x(speed,distance,isForward):
+    velocity=Twist()
+    global x,y
+    x0=x
+    if (isForward):
+        velocity.linear.x = abs(speed)
+    else:
+        velocity.linear.x = -abs(speed)
+    distance_moved=0.0
+    loopRate = rospy.Rate(10)
+    cmd_vel = '/turtle1/cmd_vel'
+    velocity_pub = rospy.Publisher(cmd_vel, Twist, queue_size=10)
+    while True:
+        rospy.loginfo('Moving')
+        velocity_pub.publish(velocity)
+        loopRate.sleep()
+        distance_moved =  abs(x-x0)
+        print(distance_moved)
+        print("x= ",x," y= ",y)
         if not (distance_moved<distance):
             rospy.loginfo("Reached destination")
             break
@@ -99,28 +207,7 @@ def rotate(angular_speed_degree, relative_angle_degree, clockwise):
     velocity.angular.z = 0
     velocity_pub.publish(velocity)
 
-def go_to_goal(x_dest, y_dest):
-    global x,y,z, angle
-    velocity_msg=Twist()
-    cmd_vel='/turtle1/cmd_vel'
 
-    while(True):
-        k_linear = 0.5
-        distance = abs(math.sqrt((x_dest-x)**2)+((y_dest-y)**2))
-        linearSpeed = k_linear * distance
-
-        k_angular = 4.0
-        angular_distance = math.atan2(y_dest-y,x_dest-x) - angle
-        ang_speed = k_angular * angular_distance
-
-        velocity_msg.linear.x = linearSpeed
-        velocity_msg.angular.z = ang_speed
-
-        velocity_pub.publish(velocity_msg)
-        print("x= ",x," y= ",y)
-
-        if distance< 0.01:
-            break
 
 def set_desired_orientation(desired_angle_degrees):
     relative_angle_degree = math.radians(abs(desired_angle_degrees))-angle
@@ -130,6 +217,25 @@ def set_desired_orientation(desired_angle_degrees):
         clockwise = 0
     rotate(30,math.degrees(abs(relative_angle_degree)),clockwise)
 
+def go_to_goal(x_dest,y_dest):
+    global x,y,z,angle
+    velocity_msg=Twist()
+    cmd_vel='/turtle1/cmd_vel'
+
+    if y_dest>int(y):
+        print(y_dest-y)
+        move_y(1,y_dest-y,True)
+    if y_dest<int(y):
+        print(int(y)-y_dest)
+        move_y(1,y-y_dest,False)
+    if x_dest>int(x):
+        print(x_dest-x)
+        move_x(1,x_dest-x,True)
+    if x_dest<int(x):
+        print(int(x)-x_dest)
+        move_x(1,x-x_dest,False)
+
+
 
 if __name__=="__main__":
     try:
@@ -138,7 +244,22 @@ if __name__=="__main__":
         velocity_pub = rospy.Publisher(cmd_vel,Twist,queue_size=10)
         position = '/turtle1/pose'
         pose_sub = rospy.Subscriber(position,Pose,poseCallBack)
-        while True:
+        graph = [[0, 0, 0, 1, 0, 0],
+             [1, 0, 1, 0, 1, 0],
+             [0, 1, 0, 0, 0, 1],
+             [0, 0, 0, 1, 0, 0],
+             [0, 1, 0, 1, 0, 0],
+             [0, 0, 1, 0, 0, 0]
+             ]
+        start = (x,y)
+        end = (0,2)
+        path = astar(graph,start,end)
+        for i in range(len(path)):
+            go_to_goal(path[i][0],path[i][1])
+            print(path[i][0],path[i][1],"\n")
+            #time.sleep(4)
+
+        '''while True:
             text=command()
             print(text)
             if 'forward' in text:
@@ -155,9 +276,16 @@ if __name__=="__main__":
                 rotate(30,90,False)
             elif 'right' in text:
                 rotate(30,90,True)
+            elif 'go to' in text:
+                temp=re.findall(r'\d+',text)
+                goal=list(map(int,temp))
+                print(goal)
+                if len(goal) == 0:
+                    continue
+                go_to_goal(goal[0],goal[1])
             elif 'stop' in text:
                 print('exiting')
-                break
+                break'''
     except rospy.ROSInterruptException:
         rospy.loginfo("Node terminated")
         exit(0)
