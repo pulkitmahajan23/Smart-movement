@@ -8,7 +8,7 @@ def command():
     while True:
         with sr.Microphone() as source:
             print("Listening")
-            audio=r.listen(source)
+            audio=r.listen(source,phrase_time_limit=10)
             try:
                 response=r.recognize_google(audio)
                 res=str(response)
@@ -31,4 +31,5 @@ if __name__ == "__main__":
     temp = re.findall(r'\d+', test_string) 
     res = list(map(int, temp))
     print(str(res[0]))
+    command()
 # print result

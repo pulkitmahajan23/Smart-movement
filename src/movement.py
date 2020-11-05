@@ -24,7 +24,7 @@ class Node():
         self.f = 0
     def __eq__(self, other):
         return self.position == other.position
-def astar(maze, start, end):
+def astar(maze,start, end):
     start_node = Node(None, start)
     start_node.g = start_node.h = start_node.f = 0
     end_node = Node(None, end)
@@ -207,8 +207,8 @@ def go_to_goal(x_dest,y_dest):
     if x_dest<int(x):
         print(int(x)-x_dest)
         move_x(1,x-x_dest,False)
-
-if __name__=="__main__":
+        
+def main():
     try:
         rospy.init_node('turtle_cleaner',anonymous=True)
         cmd_vel='/turtle1/cmd_vel'
@@ -222,21 +222,11 @@ if __name__=="__main__":
              [0, 1, 0, 1, 0, 0],
              [0, 0, 1, 0, 0, 0]
              ]
-        start = (x,y)
-        print(start)
-        time.sleep(5)
-        end = (3,2)
-        start_time=time.time()
-        path = astar(graph,start,end)
-        end_time=time.time()
-        print(path)
-        print("Time taken to find path using A* algorithm is:",(end_time-start_time))
-        for i in range(len(path)):
-            go_to_goal(path[i][0],path[i][1])
-            print(path[i][0],path[i][1],"\n")
-            #time.sleep(4)
+        start = (5,5)
+        bathroom=(3,1)
+        front_gate=(0,2)
 
-        '''while True:
+        while True:
             text=command()
             print(text)
             if 'forward' in text:
@@ -254,15 +244,28 @@ if __name__=="__main__":
             elif 'right' in text:
                 rotate(30,90,True)
             elif 'go to' in text:
-                temp=re.findall(r'\d+',text)
-                goal=list(map(int,temp))
-                print(goal)
-                if len(goal) == 0:
-                    continue
-                go_to_goal(goal[0],goal[1])
+                if 'bathroom' in text:
+                    start_time=time.time()
+                    path = astar(graph,start, bathroom)
+                    end_time=time.time()
+                    print(path)
+                    print("Time taken to find path using A* algorithm is:",(end_time-start_time))
+                    for i in range(len(path)):
+                        go_to_goal(path[i][0],path[i][1])
+                elif 'front' or 'door' in text:
+                    start_time=time.time()
+                    path = astar(graph,start, front_gate)
+                    end_time=time.time()
+                    print(path)
+                    print("Time taken to find path using A* algorithm is:",(end_time-start_time))
+                    for i in range(len(path)):
+                        go_to_goal(path[i][0],path[i][1])
+                        print(path[i][0],path[i][1],"\n")
             elif 'stop' in text:
                 print('exiting')
-                break'''
+                break
     except rospy.ROSInterruptException:
         rospy.loginfo("Node terminated")
         exit(0)
+if __name__=="__main__":
+    main()
