@@ -12,7 +12,7 @@ def command():
             try:
                 response=r.recognize_google(audio)
                 res=str(response)
-                #print(res,"\n")
+                print(res,"\n")
                 return res
                 if 'stop' in res:
                     break
